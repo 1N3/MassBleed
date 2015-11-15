@@ -1,0 +1,171 @@
+#!/bin/bash
+# MassBleed SSL Vulnerability Scanner v20151115 by 1N3 @ CrowdShield - https://crowdshield.com
+# Usage: sh massbleed.sh <CIDR|IP> <single|port|subnet> [port] [proxy]
+#
+# ABOUT:
+# This script has four main functions with the ability to proxy all connections:
+# 1. To mass scan any CIDR range for OpenSSL vulnerabilities via port 443/tcp (https) (example: sh massbleed.sh 192.168.0.0/16)
+# 2. To scan any CIDR range for OpenSSL vulnerabilities via any custom port specified (example: sh massbleed.sh 192.168.0.0/16 port 8443)
+# 3. To individual scan every port (1-10000) on a single system for vulnerable versions of OpenSSL (example: sh massbleed.sh 127.0.0.1 single)
+# 4. To scan every open port on every host in a single class C subnet for OpenSSL vulnerabilities (example: sh massbleed.sh 192.168.0. subnet)
+#
+# PROXY: A proxy option has been added to scan via proxychains. You'll need to configure /etc/proxychains.conf for this to work. 
+#
+# PROXY USAGE EXAMPLES:
+# (example: sh massbleed.sh 192.168.0.0/16 0 0 proxy)
+# (example: sh massbleed.sh 192.168.0.0/16 port 8443 proxy)
+# (example: sh massbleed.sh 127.0.0.1 single 0 proxy)
+# (example: sh massbleed.sh 192.168.0. subnet 0 proxy)
+#
+# VULNERABILITIES:
+# 1. OpenSSL HeartBleed Vulnerability (CVE-2014-0160)
+# 2. OpenSSL CCS (MITM) Vulnerability (CVE-2014-0224)
+# 3. Poodle SSLv3 vulnerability (CVE-2014-3566)
+#
+# REQUIREMENTS:
+# Is the heartbleed POC present? 
+# Is the openssl CCS script present?
+# Is unicornscan installed?
+# Is nmap installed?
+# Is sslscan installed?
+
+cd "/pentest/web/"
+
+OKBLUE='\033[94m'
+OKRED='\033[91m'
+OKGREEN='\033[92m'
+OKORANGE='\033[93m'
+RESET='\e[0m'
+HEARTBLEED=`ls heartbleed.py`
+OPENSSL_CCS=`ls openssl_ccs.pl`
+UNICORNSCAN=`which unicornscan`
+NMAP=`which nmap`
+SSLSCAN=`which sslscan`
+RANGE=$1
+SCAN_TYPE=$2
+CUSTOM_PORT=$3
+PROXY=$4
+PORT_RANGE="443,8443,8080,8888,8180,4443"
+
+echo -e " ███▄ ▄███▓ ▄▄▄        ██████   ██████  ▄▄▄▄    ██▓    ▓█████ ▓█████ ▓█████▄ $RESET"
+echo -e "▓██▒▀█▀ ██▒▒████▄    ▒██    ▒ ▒██    ▒ ▓█████▄ ▓██▒    ▓█   ▀ ▓█   ▀ ▒██▀ ██▌$RESET"
+echo -e "▓██    ▓██░▒██  ▀█▄  ░ ▓██▄   ░ ▓██▄   ▒██▒ ▄██▒██░    ▒███   ▒███   ░██   █▌$RESET"
+echo -e "▒██    ▒██ ░██▄▄▄▄██   ▒   ██▒  ▒   ██▒▒██░█▀  ▒██░    ▒▓█  ▄ ▒▓█  ▄ ░▓█▄   ▌$RESET"
+echo -e "▒██▒   ░██▒ ▓█   ▓██▒▒██████▒▒▒██████▒▒░▓█  ▀█▓░██████▒░▒████▒░▒████▒░▒████▓ $RESET"
+echo -e "░ ▒░   ░  ░ ▒▒   ▓▒█░▒ ▒▓▒ ▒ ░▒ ▒▓▒ ▒ ░░▒▓███▀▒░ ▒░▓  ░░░ ▒░ ░░░ ▒░ ░ ▒▒▓  ▒ $RESET"
+echo -e "░  ░      ░  ▒   ▒▒ ░░ ░▒  ░ ░░ ░▒  ░ ░▒░▒   ░ ░ ░ ▒  ░ ░ ░  ░ ░ ░  ░ ░ ▒  ▒ $RESET"
+echo -e "░      ░     ░   ▒   ░  ░  ░  ░  ░  ░   ░    ░   ░ ░      ░      ░    ░ ░  ░ $RESET"
+echo -e "       ░         ░  ░      ░        ░   ░          ░  ░   ░  ░   ░  ░   ░    $RESET"
+echo -e "                                             ░                        ░      $RESET"
+
+echo -e "$OKRED+ -- --=[MÄŚŚBĻËËĐ V20151115 BŸ 1Ņ3 @ ĊŖÖŴĐŚȞÏËĻĐ - https://crowdshield.com$RESET"
+
+if [ "$HEARTBLEED" != "heartbleed.py" ]; then
+	echo -e "$OKORANGE+ -- --=[heartbleed.py not found!$RESET"
+	echo -e "$OKORANGE+ -- --=[To fix, download the POC by Jared Stafford and place in same directory named: heartbleed.py$RESET"
+	exit
+fi
+
+if [ "$OPENSSL_CCS" != "openssl_ccs.pl" ]; then
+	echo -e "$OKORANGE+ -- --=[openssl_ccs.pl not found!$RESET"
+	echo -e "$OKORANGE+ -- --=[To fix, download the script from RedHat and place in same directory named: openssl_ccs.pl$RESET"
+	exit
+fi
+
+if [ "$UNICORNSCAN" == "" ]; then
+	echo -e "$OKORANGE+ -- --=[Unicornscan not installed! Try installing and try again.$RESET"
+	exit
+fi
+
+if [ "$SSLSCAN" == "" ]; then
+	echo -e "$OKORANGE+ -- --=[SSLScan not installed! Try installing and try again.$RESET"
+	exit
+fi
+
+if [ "$NMAP" == "" ]; then
+	echo -e "$OKORANGE+ -- --=[Nmap not installed! Try installing and try again.$RESET"
+	exit
+fi
+
+if [ -z "$1" ]; then
+	echo -e "$OKGREEN+ -- --=[Usage: $0 <CIDR|IP> <single|port|subnet> [port] [proxy]$RESET"
+	exit
+fi
+
+if [ "$PROXY" = "proxy" ]; then
+	echo -e "$OKORANGE+ -- --=[+ -- --=[Scanning via proxy...$RESET"
+	if [ "$SCAN_TYPE" = "single" ]; then
+		for a in `proxychains unicornscan $RANGE -p $PORT_RANGE | awk '{print $4}' | cut -d']' -f1`; 
+		do 
+			echo -e "$OKBLUE+ -- --=[Checking for HeartBleed: $RANGE:$a$RESET" && proxychains python heartbleed.py $RANGE -p $a | egrep 'server is vulnerable!' --color=auto
+			echo -e "$OKBLUE+ -- --=[Checking OpenSSL CCS: $RANGE:$a$RESET" && proxychains perl openssl_ccs.pl $RANGE $a | egrep 'FAIL Remote host is affected' --color=auto
+			echo -e "$OKBLUE+ -- --=[Checking for Poodle (SSLv3): $RANGE:$a$RESET" && proxychains sslscan --no-failed $RANGE:$a | egrep --color=auto 'SSLv3'
+		done;
+
+	elif [ "$SCAN_TYPE" = "subnet" ]; then
+		for a in {1..254}; 
+		do 
+			echo -e "$OKGREEN+ -- --=[Scanning: $RANGE$a$RESET"
+			for b in `proxychains unicornscan "$RANGE$a" -mT -r500 | awk '{print $4}' | cut -d']' -f1`;
+			do 
+				echo -e "$OKBLUE+ -- --=[Checking for HeartBleed: $RANGE$a:$b$RESET" && proxychains python heartbleed.py $RANGE$a -p $b | egrep 'server is vulnerable!' --color=auto
+				echo -e "$OKBLUE+ -- --=[Checking OpenSSL CCS: $RANGE$a:$b$RESET" && proxychains perl openssl_ccs.pl $RANGE$a $b | egrep 'FAIL Remote host is affected' --color=auto
+				echo -e "$OKBLUE+ -- --=[Checking for Poodle (SSLv3): $RANGE$a:$b$RESET" && proxychains sslscan --no-failed $RANGE$a:$b | egrep --color=auto 'SSLv3'
+			done;
+		done;
+	
+	elif [ "$SCAN_TYPE" = "port" ]; then
+		for a in `proxychains unicornscan $RANGE -p $CUSTOM_PORT | awk '{print $6}'`; 
+		do 
+			echo -e "$OKBLUE+ -- --=[Checking for HeartBleed: $a:$CUSTOM_PORT$RESET" && proxychains python heartbleed.py $a -p $CUSTOM_PORT | egrep 'server is vulnerable!' --color=auto 
+			echo -e "$OKBLUE+ -- --=[Checking OpenSSL CCS: $a:$CUSTOM_PORT$RESET" && proxychains perl openssl_ccs.pl $a $CUSTOM_PORT | egrep 'FAIL Remote host is affected' --color=auto
+			echo -e "$OKBLUE+ -- --=[Checking for Poodle (SSLv3): $a:$CUSTOM_PORT$RESET" && proxychains sslscan --no-failed $a:$CUSTOM_PORT | egrep --color=auto 'SSLv3'
+		done;
+	else 
+		for a in `proxychains unicornscan $RANGE -p 443 | awk '{print $6}'`; 
+		do 
+			echo -e "$OKBLUE+ -- --=[Checking for HeartBleed: $a$RESET" && proxychains python heartbleed.py $a -p 443 | egrep 'server is vulnerable!' --color=auto 
+			echo -e "$OKBLUE+ -- --=[Checking OpenSSL CCS: $a$RESET" && proxychains perl openssl_ccs.pl $a 443 | egrep 'FAIL Remote host is affected' --color=auto
+			echo -e "$OKBLUE+ -- --=[Checking for Poodle (SSLv3): $a$RESET" && proxychains sslscan --no-failed $a | egrep --color=auto 'SSLv3'
+		done
+	fi
+else 
+	if [ "$SCAN_TYPE" = "single" ]; then
+		for a in `unicornscan $RANGE -p $PORT_RANGE | awk '{print $4}' | cut -d']' -f1`; 
+		do 
+			echo -e "$OKBLUE+ -- --=[Checking for HeartBleed: $RANGE:$a$RESET" && python heartbleed.py $RANGE -p $a | egrep 'server is vulnerable!' --color=auto
+			echo -e "$OKBLUE+ -- --=[Checking OpenSSL CCS: $RANGE:$a$RESET" && perl openssl_ccs.pl $RANGE $a | egrep 'FAIL Remote host is affected' --color=auto
+			echo -e "$OKBLUE+ -- --=[Checking for Poodle (SSLv3): $RANGE:$a$RESET" && sslscan --no-failed $RANGE:$a | egrep --color=auto 'SSLv3'
+		done;
+	
+	elif [ "$SCAN_TYPE" = "subnet" ]; then
+		for a in {1..254}; 
+		do 
+			echo -e "$OKGREEN+ -- --=[Scanning: $RANGE$a"
+			for b in `unicornscan "$RANGE$a" -mT -r500 | awk '{print $4}' | cut -d']' -f1`;
+			do 
+				echo -e "$OKBLUE+ -- --=[Checking for HeartBleed: $RANGE$a:$b$RESET" && python heartbleed.py $RANGE$a -p $b | egrep 'server is vulnerable!' --color=auto
+				echo -e "$OKBLUE+ -- --=[Checking OpenSSL CCS: $RANGE$a:$b$RESET" && perl openssl_ccs.pl $RANGE$a $b | egrep 'FAIL Remote host is affected' --color=auto
+				echo -e "$OKBLUE+ -- --=[Checking for Poodle (SSLv3): $RANGE$a:$b$RESET" && sslscan --no-failed $RANGE$a:$b | egrep --color=auto 'SSLv3'
+			done;
+		done;
+	
+	elif [ "$SCAN_TYPE" = "port" ]; then
+		for a in `unicornscan $RANGE -p $CUSTOM_PORT | awk '{print $6}'`; 
+		do 
+			echo -e "$OKBLUE+ -- --=[Checking for HeartBleed: $a:$CUSTOM_PORT$RESET" && python heartbleed.py $a -p $CUSTOM_PORT | egrep 'server is vulnerable!' --color=auto 
+			echo -e "$OKBLUE+ -- --=[Checking OpenSSL CCS: $a:$CUSTOM_PORT$RESET" && perl openssl_ccs.pl $a $CUSTOM_PORT | egrep 'FAIL Remote host is affected' --color=auto
+			echo -e "$OKBLUE+ -- --=[Checking for Poodle (SSLv3): $a:$CUSTOM_PORT$RESET" && sslscan --no-failed $a:$CUSTOM_PORT | egrep --color=auto 'SSLv3'
+		done;
+	else 
+		for a in `unicornscan $RANGE -p 443 | awk '{print $6}'`; 
+		do 
+			echo -e "$OKBLUE+ -- --=[Checking for HeartBleed: $a$RESET" && python heartbleed.py $a -p 443 | egrep 'server is vulnerable!' --color=auto 
+			echo -e "$OKBLUE+ -- --=[Checking OpenSSL CCS: $a$RESET" && perl openssl_ccs.pl $a 443 | egrep 'FAIL Remote host is affected' --color=auto
+			echo -e "$OKBLUE+ -- --=[Checking for Poodle (SSLv3): $a$RESET" && sslscan --no-failed $a | egrep --color=auto 'SSLv3'
+		done
+	fi
+fi
+
+echo -e "$OKRED+ -- --=[Scan Complete!$RESET"
+exit 
