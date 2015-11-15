@@ -1,4 +1,5 @@
-MassBleed SSL Vulnerability Scanner v20151115 by 1N3 @ CrowdShield - https://crowdshield.com
+MassBleed SSL Vulnerability Scanner by 1N3 @ CrowdShield
+https://crowdshield.com
 
 ![alt tag](https://github.com/1N3/MassBleed/blob/master/screenshot.png)
 
