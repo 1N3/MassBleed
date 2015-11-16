@@ -4,7 +4,7 @@ https://crowdshield.com
 ![alt tag](https://github.com/1N3/MassBleed/blob/master/screenshot.png)
 
 USAGE: 
-sh massbleed.sh <CIDR|IP> <single|port|subnet> [port] [proxy]
+sh massbleed.sh [CIDR|IP] [single|port|subnet] [port] [proxy]
 
 ABOUT:
 This script has four main functions with the ability to proxy all connections:
