@@ -1,5 +1,5 @@
 #!/bin/bash
-# MassBleed SSL Vulnerability Scanner v20151115 by 1N3 @ CrowdShield - https://crowdshield.com
+# MassBleed SSL Vulnerability Scanner v20151116 by 1N3 @ CrowdShield - https://crowdshield.com
 # Usage: sh massbleed.sh <CIDR|IP> <single|port|subnet> [port] [proxy]
 #
 # ABOUT:
@@ -97,7 +97,7 @@ if [ "$PROXY" = "proxy" ]; then
 		do 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $RANGE:$a$RESET" && proxychains python heartbleed.py $RANGE -p $a | egrep 'server is vulnerable!' --color=auto
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $RANGE:$a$RESET" && proxychains perl openssl_ccs.pl $RANGE $a | egrep 'FAIL Remote host is affected' --color=auto
-			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE:$a$RESET" && proxychains sslscan --no-failed $RANGE:$a | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE:$a$RESET" && proxychains sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $RANGE:$a | egrep --color=auto 'SSLv3'
 		done;
 
 	elif [ "$SCAN_TYPE" = "subnet" ]; then
@@ -108,7 +108,7 @@ if [ "$PROXY" = "proxy" ]; then
 			do 
 				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $RANGE$a:$b$RESET" && proxychains python heartbleed.py $RANGE$a -p $b | egrep 'server is vulnerable!' --color=auto
 				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $RANGE$a:$b$RESET" && proxychains perl openssl_ccs.pl $RANGE$a $b | egrep 'FAIL Remote host is affected' --color=auto
-				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE$a:$b$RESET" && proxychains sslscan --no-failed $RANGE$a:$b | egrep --color=auto 'SSLv3'
+				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE$a:$b$RESET" && proxychains sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $RANGE$a:$b | egrep --color=auto 'SSLv3'
 			done;
 		done;
 	
@@ -117,14 +117,14 @@ if [ "$PROXY" = "proxy" ]; then
 		do 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && proxychains python heartbleed.py $a -p $CUSTOM_PORT | egrep 'server is vulnerable!' --color=auto 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && proxychains perl openssl_ccs.pl $a $CUSTOM_PORT | egrep 'FAIL Remote host is affected' --color=auto
-			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && proxychains sslscan --no-failed $a:$CUSTOM_PORT | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && proxychains sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $a:$CUSTOM_PORT | egrep --color=auto 'SSLv3'
 		done;
 	else 
 		for a in `proxychains unicornscan $RANGE -p 443 | awk '{print $6}'`; 
 		do 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $a$RESET" && proxychains python heartbleed.py $a -p 443 | egrep 'server is vulnerable!' --color=auto 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $a$RESET" && proxychains perl openssl_ccs.pl $a 443 | egrep 'FAIL Remote host is affected' --color=auto
-			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a$RESET" && proxychains sslscan --no-failed $a | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a$RESET" && proxychains sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $a | egrep --color=auto 'SSLv3'
 		done
 	fi
 else 
@@ -133,7 +133,7 @@ else
 		do 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $RANGE:$a$RESET" && python heartbleed.py $RANGE -p $a | egrep 'server is vulnerable!' --color=auto
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $RANGE:$a$RESET" && perl openssl_ccs.pl $RANGE $a | egrep 'FAIL Remote host is affected' --color=auto
-			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE:$a$RESET" && sslscan --no-failed $RANGE:$a | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE:$a$RESET" && sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $RANGE:$a | egrep --color=auto 'SSLv3'
 		done;
 	
 	elif [ "$SCAN_TYPE" = "subnet" ]; then
@@ -144,7 +144,7 @@ else
 			do 
 				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $RANGE$a:$b$RESET" && python heartbleed.py $RANGE$a -p $b | egrep 'server is vulnerable!' --color=auto
 				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $RANGE$a:$b$RESET" && perl openssl_ccs.pl $RANGE$a $b | egrep 'FAIL Remote host is affected' --color=auto
-				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE$a:$b$RESET" && sslscan --no-failed $RANGE$a:$b | egrep --color=auto 'SSLv3'
+				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE$a:$b$RESET" && sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $RANGE$a:$b | egrep --color=auto 'SSLv3'
 			done;
 		done;
 	
@@ -153,14 +153,14 @@ else
 		do 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && python heartbleed.py $a -p $CUSTOM_PORT | egrep 'server is vulnerable!' --color=auto 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && perl openssl_ccs.pl $a $CUSTOM_PORT | egrep 'FAIL Remote host is affected' --color=auto
-			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && sslscan --no-failed $a:$CUSTOM_PORT | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $a:$CUSTOM_PORT | egrep --color=auto 'SSLv3'
 		done;
 	else 
 		for a in `unicornscan $RANGE -p 443 | awk '{print $6}'`; 
 		do 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $a$RESET" && python heartbleed.py $a -p 443 | egrep 'server is vulnerable!' --color=auto 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $a$RESET" && perl openssl_ccs.pl $a 443 | egrep 'FAIL Remote host is affected' --color=auto
-			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a$RESET" && sslscan --no-failed $a | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a$RESET" && sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $a | egrep --color=auto 'SSLv3'
 		done
 	fi
 fi
