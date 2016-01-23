@@ -1,5 +1,5 @@
 #!/bin/bash
-# MassBleed SSL Vulnerability Scanner v20160109 by 1N3 @ CrowdShield - https://crowdshield.com
+# MassBleed SSL Vulnerability Scanner v20160123 by 1N3 @ CrowdShield - https://crowdshield.com
 # Usage: sh massbleed.sh <CIDR|IP> <single|port|subnet> [port] [proxy]
 #
 # ABOUT:
@@ -20,11 +20,13 @@
 # VULNERABILITIES:
 # 1. OpenSSL HeartBleed Vulnerability (CVE-2014-0160)
 # 2. OpenSSL CCS (MITM) Vulnerability (CVE-2014-0224)
-# 3. Poodle SSLv3 vulnerability (CVE-2014-3566)
+# 3. Poodle SSLv3 Vulnerability (CVE-2014-3566)
+# 4. WinShock SChannel Vulnerability (MS14-066)
 #
 # REQUIREMENTS:
 # Is the heartbleed POC present? 
 # Is the openssl CCS script present?
+# Is the winshock script present?
 # Is unicornscan installed?
 # Is nmap installed?
 # Is sslscan installed?
@@ -37,6 +39,7 @@ RESET='\e[0m'
 HEARTBLEED=`ls heartbleed.py`
 OPENSSL_CCS=`ls openssl_ccs.pl`
 UNICORNSCAN=`which unicornscan`
+WINSHOCK=`ls winshock.sh`
 NMAP=`which nmap`
 SSLSCAN=`which sslscan`
 RANGE=$1
@@ -70,6 +73,12 @@ if [ "$OPENSSL_CCS" != "openssl_ccs.pl" ]; then
 	exit
 fi
 
+if [ "$WINSHOCK" != "winshock.sh" ]; then
+	echo -e "$OKORANGE+ -- --=[winshock.sh not found!$RESET"
+	echo -e "$OKORANGE+ -- --=[To fix, download the script and place in the same directory named: winshock.sh$RESET"
+	exit
+fi
+
 if [ "$UNICORNSCAN" == "" ]; then
 	echo -e "$OKORANGE+ -- --=[Unicornscan not installed! Try installing and try again.$RESET"
 	exit
@@ -98,6 +107,7 @@ if [ "$PROXY" = "proxy" ]; then
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $RANGE:$a$RESET" && proxychains python heartbleed.py $RANGE -p $a | egrep 'server is vulnerable!' --color=auto
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $RANGE:$a$RESET" && proxychains perl openssl_ccs.pl $RANGE $a | egrep 'FAIL Remote host is affected' --color=auto
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE:$a$RESET" && proxychains sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $RANGE:$a | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE WinShock (MS14-066)$RESET$OKBLUE: $RANGE:$a$RESET" && proxychains ./winshock.sh $RANGE $a
 		done;
 
 	elif [ "$SCAN_TYPE" = "subnet" ]; then
@@ -109,6 +119,7 @@ if [ "$PROXY" = "proxy" ]; then
 				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $RANGE$a:$b$RESET" && proxychains python heartbleed.py $RANGE$a -p $b | egrep 'server is vulnerable!' --color=auto
 				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $RANGE$a:$b$RESET" && proxychains perl openssl_ccs.pl $RANGE$a $b | egrep 'FAIL Remote host is affected' --color=auto
 				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE$a:$b$RESET" && proxychains sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $RANGE$a:$b | egrep --color=auto 'SSLv3'
+				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE WinShock (MS14-066)$RESET$OKBLUE: $RANGE$a:$b$RESET" && proxychains ./winshock.sh $RANGE$a $b
 			done;
 		done;
 	
@@ -118,6 +129,7 @@ if [ "$PROXY" = "proxy" ]; then
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && proxychains python heartbleed.py $a -p $CUSTOM_PORT | egrep 'server is vulnerable!' --color=auto 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && proxychains perl openssl_ccs.pl $a $CUSTOM_PORT | egrep 'FAIL Remote host is affected' --color=auto
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && proxychains sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $a:$CUSTOM_PORT | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE WinShock (MS14-066)$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && proxychains ./winshock.sh $a $CUSTOM_PORT
 		done;
 	else 
 		for a in `proxychains unicornscan $RANGE -p 443  2>/dev/null | awk '{print $6}'`; 
@@ -125,6 +137,7 @@ if [ "$PROXY" = "proxy" ]; then
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $a$RESET" && proxychains python heartbleed.py $a -p 443 | egrep 'server is vulnerable!' --color=auto 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $a$RESET" && proxychains perl openssl_ccs.pl $a 443 | egrep 'FAIL Remote host is affected' --color=auto
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a$RESET" && proxychains sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $a | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE WinShock (MS14-066)$RESET$OKBLUE: $a$RESET" && proxychains ./winshock.sh $a 443
 		done
 	fi
 else 
@@ -134,6 +147,7 @@ else
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $RANGE:$a$RESET" && python heartbleed.py $RANGE -p $a | egrep 'server is vulnerable!' --color=auto
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $RANGE:$a$RESET" && perl openssl_ccs.pl $RANGE $a | egrep 'FAIL Remote host is affected' --color=auto
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE:$a$RESET" && sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $RANGE:$a | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE WinShock (MS14-066)$RESET$OKBLUE: $RANGE:$a$RESET" && ./winshock.sh $RANGE $a
 		done;
 	
 	elif [ "$SCAN_TYPE" = "subnet" ]; then
@@ -145,6 +159,7 @@ else
 				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $RANGE$a:$b$RESET" && python heartbleed.py $RANGE$a -p $b | egrep 'server is vulnerable!' --color=auto
 				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $RANGE$a:$b$RESET" && perl openssl_ccs.pl $RANGE$a $b | egrep 'FAIL Remote host is affected' --color=auto
 				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $RANGE$a:$b$RESET" && sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $RANGE$a:$b | egrep --color=auto 'SSLv3'
+				echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE WinShock (MS14-066)$RESET$OKBLUE: $RANGE$a:$b$RESET" && ./winshock.sh $RANGE$a $b
 			done;
 		done;
 	
@@ -154,6 +169,7 @@ else
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && python heartbleed.py $a -p $CUSTOM_PORT | egrep 'server is vulnerable!' --color=auto 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && perl openssl_ccs.pl $a $CUSTOM_PORT | egrep 'FAIL Remote host is affected' --color=auto
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $a:$CUSTOM_PORT | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE WinShock (MS14-066)$RESET$OKBLUE: $a:$CUSTOM_PORT$RESET" && ./winshock.sh $a $CUSTOM_PORT
 		done;
 	else 
 		for a in `unicornscan $RANGE -p 443 2>/dev/null | awk '{print $6}'`; 
@@ -161,6 +177,7 @@ else
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE HeartBleed$RESET$OKBLUE: $a$RESET" && python heartbleed.py $a -p 443 | egrep 'server is vulnerable!' --color=auto 
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE OpenSSL CCS$RESET$OKBLUE: $a$RESET" && perl openssl_ccs.pl $a 443 | egrep 'FAIL Remote host is affected' --color=auto
 			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE Poodle (SSLv3)$RESET$OKBLUE: $a$RESET" && sslscan --no-failed --ssl3 --no-check-certificate --no-renegotiation --no-compression --no-heartbleed $a | egrep --color=auto 'SSLv3'
+			echo -e "$OKBLUE+ -- --=[Checking for$RESET$OKORANGE WinShock (MS14-066)$RESET$OKBLUE: $a$RESET" && ./winshock.sh $a 443
 		done
 	fi
 fi

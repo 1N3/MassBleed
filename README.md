@@ -1,4 +1,4 @@
-MassBleed SSL Vulnerability Scanner v2015116
+MassBleed SSL Vulnerability Scanner
 
 ![alt tag](https://github.com/1N3/MassBleed/blob/master/screenshot.png)
 
@@ -24,11 +24,13 @@ PROXY USAGE EXAMPLES:
 VULNERABILITIES:
  1. OpenSSL HeartBleed Vulnerability (CVE-2014-0160)
  2. OpenSSL CCS (MITM) Vulnerability (CVE-2014-0224)
- 3. Poodle SSLv3 vulnerability (CVE-2014-3566)
+ 3. Poodle SSLv3 Vulnerability (CVE-2014-3566)
+ 4. WinShock SChannel Vulnerability (MS14-066)
 
 REQUIREMENTS:
  Is the heartbleed POC present? 
  Is the openssl CCS script present?
+ Is the winshock script present?
  Is unicornscan installed?
  Is nmap installed?
  Is sslscan installed?
