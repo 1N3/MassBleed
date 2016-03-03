@@ -18,16 +18,17 @@ This script has four main functions with the ability to proxy all connections:
 A proxy option has been added to scan via proxychains. You'll need to configure /etc/proxychains.conf for this to work. 
 
 ## PROXY USAGE EXAMPLES:
-* (example: sh massbleed.sh 192.168.0.0/16 0 0 proxy)
-* (example: sh massbleed.sh 192.168.0.0/16 port 8443 proxy)
-* (example: sh massbleed.sh 127.0.0.1 single 0 proxy)
-* (example: sh massbleed.sh 192.168.0. subnet 0 proxy)
+* (example: ./massbleed 192.168.0.0/16 0 0 proxy)
+* (example: ./massbleed 192.168.0.0/16 port 8443 proxy)
+* (example: ./massbleed 127.0.0.1 single 0 proxy)
+* (example: ./massbleed 192.168.0. subnet 0 proxy)
 
 ## VULNERABILITIES:
 1. OpenSSL HeartBleed Vulnerability (CVE-2014-0160)
 2. OpenSSL CCS (MITM) Vulnerability (CVE-2014-0224)
 3. Poodle SSLv3 Vulnerability (CVE-2014-3566)
 4. WinShock SChannel Vulnerability (MS14-066)
+5. DROWN Attack (CVE-2016-0800)
 
 ## REQUIREMENTS:
 * Is the heartbleed POC present? 
